@@ -25,7 +25,7 @@ from ctypes import wintypes
 bl_info = {
     "name": "Open/Close System Console",
     "author": "todashuta",
-    "version": (1, 0, 0),
+    "version": (1, 1, 0),
     "blender": (2, 80, 0),
     "location": "Menu Bar > Open System Console, F3 Search > Open System Console/Close System Console",
     "description": "",
@@ -64,12 +64,16 @@ def console_opened() -> bool:
 
 def console_open():
     if not console_opened():
-        bpy.ops.wm.console_toggle()
+        return bpy.ops.wm.console_toggle()
+    else:
+        return {"CANCELLED"}
 
 
 def console_close():
     if console_opened():
-        bpy.ops.wm.console_toggle()
+        return bpy.ops.wm.console_toggle()
+    else:
+        return {"CANCELLED"}
 
 
 class WINDOW_OT_open_system_console(bpy.types.Operator):
@@ -81,8 +85,7 @@ class WINDOW_OT_open_system_console(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        console_open()
-        return {"FINISHED"}
+        return console_open()
 
 
 class WINDOW_OT_close_system_console(bpy.types.Operator):
@@ -94,8 +97,7 @@ class WINDOW_OT_close_system_console(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        console_close()
-        return {"FINISHED"}
+        return console_close()
 
 
 classes = [
@@ -105,13 +107,15 @@ classes = [
 
 
 def menu_func(self, context):
-    self.layout.operator(WINDOW_OT_open_system_console.bl_idname, icon="CONSOLE")
+    layout = self.layout
+    layout.operator(WINDOW_OT_open_system_console.bl_idname, icon="CONSOLE")
+    layout.separator()
 
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-    bpy.types.TOPBAR_MT_window.append(menu_func)
+    bpy.types.TOPBAR_MT_window.prepend(menu_func)
 
 
 def unregister():
