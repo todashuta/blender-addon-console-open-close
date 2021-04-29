@@ -23,57 +23,44 @@ from ctypes import wintypes
 
 
 bl_info = {
-    "name": "Open/Close System Console",
+    "name": "Open System Console",
     "author": "todashuta",
-    "version": (1, 1, 0),
+    "version": (1, 1, 1),
     "blender": (2, 80, 0),
-    "location": "Menu Bar > Open System Console, F3 Search > Open System Console/Close System Console",
+    "location": "Menu Bar > Window > Open System Console",
     "description": "",
     "warning": "",
-    "wiki_url": "https://github.com/todashuta/blender-addon-console-open-close/wiki",
-    "tracker_url": "https://github.com/todashuta/blender-addon-console-open-close/issues",
+    "wiki_url": "https://github.com/todashuta/blender-addon-open-system-console/wiki",
+    "tracker_url": "https://github.com/todashuta/blender-addon-open-system-console/issues",
     "category": "3D View"
 }
 
 
 def num_windows() -> int:
     import os
-    blender_exe_pid = os.getpid()
+    blender_pid = os.getpid()
     EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
     EnumWindows = ctypes.windll.user32.EnumWindows
-    tids = []
+    nwin = 0
     user32 = ctypes.WinDLL("user32", use_last_error=True)
     def callback(hwnd, lparam):
+        nonlocal nwin
         pid = wintypes.DWORD()
-        tid = user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        _ = user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
         if ctypes.windll.user32.IsWindowVisible(hwnd):
-            if pid.value == blender_exe_pid:
-                tids.append(tid)
+            if pid.value == blender_pid:
+                nwin += 1
             return True
     EnumWindows(EnumWindowsProc(callback), 0)
-    return len(tids)
+    return nwin
 
 
-def console_opened() -> bool:
+def console_is_opened() -> bool:
     n1 = num_windows()
     bpy.ops.wm.console_toggle()
     n2 = num_windows()
     bpy.ops.wm.console_toggle()
     return n1 > n2
-
-
-def console_open():
-    if not console_opened():
-        return bpy.ops.wm.console_toggle()
-    else:
-        return {"CANCELLED"}
-
-
-def console_close():
-    if console_opened():
-        return bpy.ops.wm.console_toggle()
-    else:
-        return {"CANCELLED"}
 
 
 class WINDOW_OT_open_system_console(bpy.types.Operator):
@@ -85,7 +72,10 @@ class WINDOW_OT_open_system_console(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        return console_open()
+        if not console_is_opened():
+            return bpy.ops.wm.console_toggle()
+        else:
+            return {"CANCELLED"}
 
 
 class WINDOW_OT_close_system_console(bpy.types.Operator):
@@ -97,7 +87,10 @@ class WINDOW_OT_close_system_console(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        return console_close()
+        if console_is_opened():
+            return bpy.ops.wm.console_toggle()
+        else:
+            return {"CANCELLED"}
 
 
 classes = [
